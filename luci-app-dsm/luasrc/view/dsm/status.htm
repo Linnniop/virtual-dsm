@@ -1,0 +1,32 @@
+<%
+local util = require "luci.util"
+local status_port_ip = util.trim(util.exec("/usr/libexec/istorec/dsm.sh status_port_ip"))
+local params = {}
+for param in status_port_ip:gmatch("%S+") do 
+  table.insert(params, param) 
+end
+local container_install = params[1] ~= "not_install"
+local container_running = params[1] == "running"
+local port = params[2]
+local ip = params[3]
+-%>
+<div class="cbi-value">
+    <label class="cbi-value-title"><%:Status%></label>
+    <div class="cbi-value-field">
+        <% if container_running then %>
+        <button class="cbi-button cbi-button-success" disabled="true"><%:SynologyDSM is running%></button>
+        <% else %>
+        <button class="cbi-button cbi-button-negative" disabled="true"><%:SynologyDSM is not running%></button>
+        <% end %>
+    </div>
+</div>
+<%
+if container_running then
+-%>
+<div class="cbi-value cbi-value-last">
+    <label class="cbi-value-title">&nbsp;</label>
+    <div class="cbi-value-field">
+      <input type="button" class="btn cbi-button cbi-button-apply" name="start" value="<%:Open SynologyDSM%>" onclick="window.open('http://<%=ip%>:<%=port%>', '_blank')">
+    </div>
+</div>
+<% end %>

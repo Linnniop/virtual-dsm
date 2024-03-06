@@ -1,0 +1,11 @@
+config main
+	option 'port' '5000'
+
+# option 'ramsize' '2G'
+# option 'disksize' '40G'
+#	option 'cpucore' '2'
+#	option 'gpu' '1'
+#	option 'ip' ''
+#	option 'storage_path' ''
+#	option 'image_name' ''
+
