@@ -5,6 +5,7 @@ ACTION=${1}
 shift 1
 
 do_install() {
+  local macvlan=`uci get dsm.@main[0].macvlan 2>/dev/null`
   local port=`uci get dsm.@main[0].port 2>/dev/null`
   local ip=`uci get dsm.@main[0].ip 2>/dev/null`
   local ipmask=`uci get dsm.@main[0].ipmask 2>/dev/null`
@@ -28,6 +29,7 @@ do_install() {
     echo "/dev/kvm not found"
     exit 1
   fi
+  [ -z "$macvlan" ] && macvlan="1"
   [ -z "$port" ] && port="5000"
   [ -z "$ramsize" ] && ramsize="2G"
   [ -z "$disksize" ] && disksize="40G"
@@ -38,8 +40,8 @@ do_install() {
   docker rm -f dsm
 
   if [ "$macvlan" = "1" ]; then
-    local macvlan=`docker network inspect dsm-net -f '{{.Name}}'`
-    if [ ! "$macvlan" = "dsm-net" ]; then
+    local hasvlan=`docker network inspect dsm-net -f '{{.Name}}' 2>/dev/null `
+    if [ ! "$hasvlan" = "dsm-net" ]; then
       #local lan_dev=`echo $lan_status|jsonfilter -e 'jsonfilter -e '@["device"]'`
       docker network create -d macvlan --subnet=$ipmask --gateway=$gateway -o parent=br-lan dsm-net
     fi
