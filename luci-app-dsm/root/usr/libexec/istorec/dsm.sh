@@ -5,10 +5,9 @@ ACTION=${1}
 shift 1
 
 do_install() {
-  local macvlan=`uci get dsm.@main[0].macvlan 2>/dev/null`
+  local dhcp=`uci get dsm.@main[0].dhcp 2>/dev/null`
   local port=`uci get dsm.@main[0].port 2>/dev/null`
   local ip=`uci get dsm.@main[0].ip 2>/dev/null`
-  local ipmask=`uci get dsm.@main[0].ipmask 2>/dev/null`
   local gateway=`uci get dsm.@main[0].gateway 2>/dev/null`
   local ramsize=`uci get dsm.@main[0].ramsize 2>/dev/null`
   local disksize=`uci get dsm.@main[0].disksize 2>/dev/null`
@@ -29,7 +28,7 @@ do_install() {
     echo "/dev/kvm not found"
     exit 1
   fi
-  [ -z "$macvlan" ] && macvlan="1"
+  [ -z "$dhcp" ] && dhcp="0"
   [ -z "$port" ] && port="5000"
   [ -z "$ramsize" ] && ramsize="2G"
   [ -z "$disksize" ] && disksize="40G"
@@ -39,21 +38,26 @@ do_install() {
   docker pull ${image_name}
   docker rm -f dsm
 
-  if [ "$macvlan" = "1" ]; then
-    local hasvlan=`docker network inspect dsm-net -f '{{.Name}}' 2>/dev/null `
-    if [ ! "$hasvlan" = "dsm-net" ]; then
-      #local lan_dev=`echo $lan_status|jsonfilter -e 'jsonfilter -e '@["device"]'`
-      docker network create -d macvlan --subnet=$ipmask --gateway=$gateway -o parent=br-lan dsm-net
-    fi
+  local hasvlan=`docker network inspect dsm-net -f '{{.Name}}' 2>/dev/null`
+  if [ ! "$hasvlan" = "dsm-net" ]; then
+    docker network create -o com.docker.network.bridge.name=dsm-br --driver=bridge dsm-net
   fi
+  local mask=`ubus call network.interface.lan status | jsonfilter -e '@["ipv4-address"][0].mask'`
 
-  local cmd="docker run --restart=unless-stopped -d -h SynologyDSMServer \
+  local cmd="docker run --entrypoint /usr/bin/tini --restart=unless-stopped -d -h SynologyDSMServer \
     -p $port:5000 \
     -v \"$storage_path:/storage\" \
+    -v /usr/libexec/istorec/dsmentry:/dsmentry \
+    -v /var/run/vmease:/var/run/vmease \
     -e DISK_SIZE=$disksize \
     -e RAM_SIZE=$ramsize \
     -e CPU_CORES=$cpucore \
+    -e DHCP=$dhcp \
+    -e DSMIP=$ip \
+    -e DSMMASK=$mask \
+    -e DSMGATEWAY=$gateway \
     --dns=223.5.5.5 \
+    --net=dsm-net \
     --device /dev/kvm \
     --cap-add NET_ADMIN "
 
@@ -66,7 +70,7 @@ do_install() {
 
   if [ "$macvlan" = "1" ]; then
       cmd="$cmd\
-        --net=dsm-net --ip=$ip "
+        --net=dsm-net "
   fi
 
   local tz="`uci get system.@system[0].zonename | sed 's/ /_/g'`"
@@ -74,7 +78,7 @@ do_install() {
 
   cmd="$cmd -v /mnt:/mnt"
   mountpoint -q /mnt && cmd="$cmd:rslave"
-  cmd="$cmd --stop-timeout 120 --name dsm \"$image_name\""
+  cmd="$cmd --stop-timeout 120 --name dsm \"$image_name\" -s /dsmentry/dsmentry.sh "
 
   echo "$cmd"
   eval "$cmd"

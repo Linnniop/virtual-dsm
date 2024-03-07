@@ -5,10 +5,9 @@ config main
 # option 'disksize' '40G'
 #	option 'cpucore' '2'
 #	option 'gpu' '1'
-#	option 'ip' ''
 #	option 'storage_path' ''
 #	option 'image_name' ''
-# option 'macvlan' '1'
-# option 'ipmask' ''
+# option 'dhcp' '0'
+# option 'ip' ''
 # option 'gateway' ''
 

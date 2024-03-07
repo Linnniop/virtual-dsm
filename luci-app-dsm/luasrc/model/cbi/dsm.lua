@@ -31,31 +31,19 @@ s = m:section(TypedSection, "main", translate("Setup"),
 s.addremove=false
 s.anonymous=true
 
-o = s:option(Flag, "macvlan", translate("MacVlan") .. "<b>*</b>")
-o.default = 1
-o.rmempty = false
-
 o = s:option(Value, "port", translate("Port").."<b>*</b>")
 o.default = "5000"
 o.datatype = "port"
-o:depends("macvlan", 0)
 
 local defaultNet = dsm_model.defaultNet()
 
 o = s:option(Value, "ip", translate("IP").."<b>*</b>")
 o.default = defaultNet.ip
 o.datatype = "string"
-o:depends("macvlan", 1)
-
-o = s:option(Value, "ipmask", translate("IpMask").."<b>*</b>")
-o.default = defaultNet.ipmask
-o.datatype = "string"
-o:depends("macvlan", 1)
 
 o = s:option(Value, "gateway", translate("Gateway").."<b>*</b>")
 o.default = defaultNet.gateway
 o.datatype = "string"
-o:depends("macvlan", 1)
 
 o = s:option(Value, "cpucore", translate("CPU core number").."<b>*</b>")
 o.rmempty = false
