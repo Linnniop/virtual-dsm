@@ -6,11 +6,13 @@ shift 1
 
 do_install() {
   local port=`uci get dsm.@main[0].port 2>/dev/null`
+  local ip=`uci get dsm.@main[0].ip 2>/dev/null`
+  local ipmask=`uci get dsm.@main[0].ipmask 2>/dev/null`
+  local gateway=`uci get dsm.@main[0].gateway 2>/dev/null`
   local ramsize=`uci get dsm.@main[0].ramsize 2>/dev/null`
   local disksize=`uci get dsm.@main[0].disksize 2>/dev/null`
   local cpucore=`uci get dsm.@main[0].cpucore 2>/dev/null`
   local gpu=`uci get dsm.@main[0].gpu 2>/dev/null`
-  local ip=`uci get dsm.@main[0].ip 2>/dev/null`
   local image_name=`uci get dsm.@main[0].image_name 2>/dev/null`
   local storage_path=`uci get dsm.@main[0].storage_path 2>/dev/null`
 
@@ -35,22 +37,20 @@ do_install() {
   docker pull ${image_name}
   docker rm -f dsm
 
-  local macvlan=`docker network inspect dsm-net -f '{{.Name}}'`
-  if [ ! "$macvlan" = "dsm-net" ]; then
-    local lan_status=`ubus call network.interface.lan status`
-    local lan_ip=`echo $lan_status|jsonfilter -e '@["ipv4-address"][0].address'`
-    local lan_mask=`echo $lan_status|jsonfilter -e '@["ipv4-address"][0].mask'`
-    #local lan_dev=`echo $lan_status|jsonfilter -e 'jsonfilter -e '@["device"]'`
-    docker network create -d macvlan --subnet=$lan_ip/$lan_mask --gateway=$lan_ip -o parent=br-lan dsm-net
+  if [ "$macvlan" = "1" ]; then
+    local macvlan=`docker network inspect dsm-net -f '{{.Name}}'`
+    if [ ! "$macvlan" = "dsm-net" ]; then
+      #local lan_dev=`echo $lan_status|jsonfilter -e 'jsonfilter -e '@["device"]'`
+      docker network create -d macvlan --subnet=$ipmask --gateway=$gateway -o parent=br-lan dsm-net
+    fi
   fi
 
   local cmd="docker run --restart=unless-stopped -d -h SynologyDSMServer \
+    -p $port:5000 \
     -v \"$storage_path:/storage\" \
     -e DISK_SIZE=$disksize \
     -e RAM_SIZE=$ramsize \
     -e CPU_CORES=$cpucore \
-    --net=dsm-net --ip=$ip \
-    --dns=127.0.0.1 \
     --dns=223.5.5.5 \
     --device /dev/kvm \
     --cap-add NET_ADMIN "
@@ -60,6 +60,11 @@ do_install() {
       cmd="$cmd\
       -e GPU=Y --device /dev/dri:/dev/dri "
     fi
+  fi
+
+  if [ "$macvlan" = "1" ]; then
+      cmd="$cmd\
+        --net=dsm-net --ip=$ip "
   fi
 
   local tz="`uci get system.@system[0].zonename | sed 's/ /_/g'`"
@@ -114,7 +119,8 @@ case ${ACTION} in
     if [ -z "$ip" ]; then
       ip="127.0.0.1"
     fi
-    echo "$running $port $ip"
+    dockerid=`docker inspect --format="{{.Id}}" dsm`
+    echo "$running $port $ip $dockerid"
   ;;
   *)
     usage

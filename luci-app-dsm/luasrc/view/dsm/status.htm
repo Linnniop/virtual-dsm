@@ -9,14 +9,18 @@ local container_install = params[1] ~= "not_install"
 local container_running = params[1] == "running"
 local port = params[2]
 local ip = params[3]
+local dockerid=""
+if table.getn(params) > 3 then
+  dockerid = params[4]
+end
 -%>
 <div class="cbi-value">
     <label class="cbi-value-title"><%:Status%></label>
     <div class="cbi-value-field">
         <% if container_running then %>
-        <button class="cbi-button cbi-button-success" disabled="true"><%:SynologyDSM is running%></button>
+        <button class="cbi-button cbi-button-success" onclick="window.open('/cgi-bin/luci/admin/docker/container/<%=dockerid%>/logs', '_blank')" ><%:Running, click to show log%></button>
         <% else %>
-        <button class="cbi-button cbi-button-negative" disabled="true"><%:SynologyDSM is not running%></button>
+        <button class="cbi-button cbi-button-negative" disabled="true"><%:DSM is not running%></button>
         <% end %>
     </div>
 </div>
@@ -26,7 +30,7 @@ if container_running then
 <div class="cbi-value cbi-value-last">
     <label class="cbi-value-title">&nbsp;</label>
     <div class="cbi-value-field">
-      <input type="button" class="btn cbi-button cbi-button-apply" name="start" value="<%:Open SynologyDSM%>" onclick="window.open('http://<%=ip%>:<%=port%>', '_blank')">
+      <input type="button" class="btn cbi-button cbi-button-apply" name="start" value="<%:Open DSM%>" onclick="window.open('http://<%=ip%>:<%=port%>', '_blank')"/>
     </div>
 </div>
 <% end %>

@@ -31,14 +31,14 @@ msgstr "以下参数只在安装或者升级时才会生效："
 msgid "Status"
 msgstr "状态"
 
-msgid "SynologyDSM is running"
-msgstr "SynologyDSM 运行中"
+msgid "Running, click to show log"
+msgstr "运行中，点击看日志"
 
-msgid "SynologyDSM is not running"
-msgstr "SynologyDSM 未运行"
+msgid "DSM is not running"
+msgstr "DSM 未运行"
 
-msgid "Open SynologyDSM"
-msgstr "打开 SynologyDSM"
+msgid "Open DSM"
+msgstr "打开 DSM"
 
 msgid "The free space of Docker is less than 2GB, which may cause the installation to fail."
 msgstr "Docker 可用空间已不足2GB，可能导致安装失败。"

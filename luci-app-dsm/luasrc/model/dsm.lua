@@ -62,15 +62,24 @@ local function findLast(haystack, needle)
   if i==nil then return nil else return i-1 end
 end
 
-dsm.defaultIp = function()
+dsm.defaultNet = function()
+  local defNet = {}
   local ip = util.trim(util.exec("ubus call network.interface.lan status | jsonfilter -e '@[\"ipv4-address\"][0].address'"))
+  local mask = util.trim(util.exec("ubus call network.interface.lan status | jsonfilter -e '@[\"ipv4-address\"][0].mask'"))
   if ip ~= nil and ip ~= "" then
     local p = findLast(ip, "%.")
     if p ~= nil then
-      return string.sub(ip,1,p) .. "66"
+      defNet["ip"] = string.sub(ip,1,p) .. "66"
+      defNet["ipmask"] = string.sub(ip,1,p) .. "0/" .. mask
     end
+    defNet["gateway"] = ip
+    return defNet
   end
-  return "192.168.100.77"
+
+  defNet["ip"] = "192.168.100.77"
+  defNet["ipmask"] = "192.168.100.0/24"
+  defNet["gateway"] = "192.168.100.1"
+  return defNet
 end
 
 return dsm
